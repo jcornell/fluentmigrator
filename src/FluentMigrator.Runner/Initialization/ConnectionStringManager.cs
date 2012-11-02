@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Configuration;
-using System.Text.RegularExpressions;
 
 namespace FluentMigrator.Runner.Initialization
 {
@@ -15,13 +14,13 @@ namespace FluentMigrator.Runner.Initialization
         private readonly INetConfigManager configManager;
         private readonly string configPath;
         private readonly string database;
+        private readonly bool doNotAnnounceConnectionString;
         private string configFile;
         private string connection;
         private Func<string> machineNameProvider = () => Environment.MachineName;
         private bool notUsingConfig;
 
-        public ConnectionStringManager(INetConfigManager configManager, IAnnouncer announcer, string connection, string configPath, string assemblyLocation,
-                                       string database)
+        public ConnectionStringManager(INetConfigManager configManager, IAnnouncer announcer, string connection, string configPath, string assemblyLocation, string database, bool doNotAnnounceConnectionString)
         {
             this.connection = connection;
             this.configPath = configPath;
@@ -30,6 +29,7 @@ namespace FluentMigrator.Runner.Initialization
             notUsingConfig = true;
             this.configManager = configManager;
             this.announcer = announcer;
+            this.doNotAnnounceConnectionString = doNotAnnounceConnectionString;
         }
 
         public string ConnectionString { get; private set; }
@@ -92,17 +92,19 @@ namespace FluentMigrator.Runner.Initialization
         {
             if (string.IsNullOrEmpty(ConnectionString))
                 throw new UndeterminableConnectionException("Unable to resolve any connectionstring using parameters \"/connection\" and \"/configPath\"");
-
-            announcer.Say(notUsingConfig
-                              ? string.Format("Using Database {0} and Connection String {1}", database, ObfuscatedConnectionString())
-                              : string.Format("Using Connection {0} from Configuration file {1}", connection, configFile));
-        }
-
-        private string ObfuscatedConnectionString()
-        {
-            var endsWithSemicolon = Regex.Replace(ConnectionString, "(Password|Pwd)=[^;]+;", "$1=******;", RegexOptions.IgnoreCase);
-            var endsWithoutSemicolon = Regex.Replace(endsWithSemicolon, "(Password|Pwd)=[^;]+$", "$1=******", RegexOptions.IgnoreCase);
-            return endsWithoutSemicolon;
+            if (notUsingConfig)
+            {
+                if (doNotAnnounceConnectionString)
+                {
+                    announcer.Say(string.Format("Using Database {0}", database));
+                }
+                else
+                {
+                    announcer.Say(string.Format("Using Database {0} and Connection String {1}", database, ConnectionString));
+                }
+            }
+            else{ announcer.Say(string.Format("Using Connection {0} from Configuration file {1}", connection, configFile));
+            }
         }
     }
 }

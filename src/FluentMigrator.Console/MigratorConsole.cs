@@ -48,6 +48,7 @@ namespace FluentMigrator.Console
         public bool Verbose;
         public long Version;
         public string WorkingDirectory;
+        public bool DoNotAnnounceConnectionString;
 
         public RunnerContext RunnerContext { get; private set;}
 
@@ -82,6 +83,12 @@ namespace FluentMigrator.Console
                                                           " is found. If not specified, it defaults to the machine.config used by the currently running CLR version")
                                             ,
                                             v => { ConnectionStringConfigPath = v; }
+                                            },
+                                        {
+                                            "doNotAnnounceConnectionString=|hideconn=|hc=",
+                                            string.Format("Do not show the supplied connection string when announcing connections.  Default is false.")
+                                            ,
+                                            v => { DoNotAnnounceConnectionString = true; }
                                             },
                                         {
                                             "namespace=|ns=",
@@ -270,7 +277,8 @@ namespace FluentMigrator.Console
                 Timeout = Timeout,
                 ConnectionStringConfigPath = ConnectionStringConfigPath,
                 ApplicationContext = ApplicationContext,
-                Tags = Tags
+                Tags = Tags,
+                DoNotAnnounceConnectionString = DoNotAnnounceConnectionString
             };
 
             new TaskExecutor(RunnerContext).Execute();

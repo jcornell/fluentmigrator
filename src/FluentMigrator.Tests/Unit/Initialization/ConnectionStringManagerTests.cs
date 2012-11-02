@@ -48,7 +48,7 @@ namespace FluentMigrator.Tests.Unit.Initialization
             configManagerMock.Setup(x => x.LoadFromMachineConfiguration())
                 .Returns(LoadFromFile(machineConfigPath));
 
-            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, "This is a connection string", null, TARGET, DATABASE);
+            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, "This is a connection string", null, TARGET, DATABASE, false);
             
             sut.LoadConnectionString();
 
@@ -59,7 +59,7 @@ namespace FluentMigrator.Tests.Unit.Initialization
         public void ShouldLoadNamedConnectionFromSpecifiedConfigFile()
         {
             string configPath = GetPath("WithConnectionString.config");
-            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, CONNECTION_NAME, configPath, TARGET, DATABASE);
+            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, CONNECTION_NAME, configPath, TARGET, DATABASE, false);
             configManagerMock.Setup(m => m.LoadFromFile(configPath))
                 .Returns(LoadFromFile(configPath));
 
@@ -76,7 +76,7 @@ namespace FluentMigrator.Tests.Unit.Initialization
             configManagerMock.Setup(x => x.LoadFromFile(TARGET))
                 .Returns(LoadFromFile(configPath));
 
-            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, CONNECTION_NAME, null, TARGET, DATABASE);
+            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, CONNECTION_NAME, null, TARGET, DATABASE, false);
 
             sut.LoadConnectionString();
 
@@ -95,7 +95,7 @@ namespace FluentMigrator.Tests.Unit.Initialization
             configManagerMock.Setup(x => x.LoadFromMachineConfiguration())
                 .Returns(LoadFromFile(machineConfigPath));
 
-            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, CONNECTION_NAME, null, TARGET, DATABASE);
+            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, CONNECTION_NAME, null, TARGET, DATABASE, false);
             sut.LoadConnectionString();
 
             configManagerMock.VerifyAll();
@@ -107,7 +107,7 @@ namespace FluentMigrator.Tests.Unit.Initialization
         public void ShouldLoadMachineNameConnectionFromSpecifiedConfigIfNoConnectionNameSpecified()
         {
             string configPath = GetPath("WithConnectionString.config");
-            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, null, configPath, TARGET, DATABASE);
+            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, null, configPath, TARGET, DATABASE, false);
             configManagerMock.Setup(m => m.LoadFromFile(configPath))
                 .Returns(LoadFromFile(configPath));
             sut.MachineNameProvider = () => "MACHINENAME";
@@ -133,15 +133,38 @@ namespace FluentMigrator.Tests.Unit.Initialization
 
             configManagerMock.Setup(x => x.LoadFromMachineConfiguration())
                 .Returns(LoadFromFile(machineConfigPath));
-
+            
             var announced = "";
             announcerMock.Setup(m => m.Say(It.IsAny<string>())).Callback((string announcement) => announced = announcement);
 
-            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, connectionString, null, TARGET, DATABASE);
+            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, connectionString, null, TARGET, DATABASE, true);
 
             sut.LoadConnectionString();
 
             Assert.That(announced, Is.Not.StringContaining("testpw"));
+        }
+
+        [Test]
+        [TestCase("Server=testserver;User Id=testuser;Password=testpw;Initial Catalog=testdb;")]
+        public void ShouldNotHidePasswordWhenAnnouncingConnectionString(string connectionString)
+        {
+            string configPath = GetPath("WithWrongConnectionString.config");
+            string machineConfigPath = GetPath("FromMachineConfig.config");
+
+            configManagerMock.Setup(x => x.LoadFromFile(TARGET))
+                .Returns(LoadFromFile(configPath));
+
+            configManagerMock.Setup(x => x.LoadFromMachineConfiguration())
+                .Returns(LoadFromFile(machineConfigPath));
+
+            var announced = "";
+            announcerMock.Setup(m => m.Say(It.IsAny<string>())).Callback((string announcement) => announced = announcement);
+
+            var sut = new ConnectionStringManager(configManagerMock.Object, announcerMock.Object, connectionString, null, TARGET, DATABASE, false);
+
+            sut.LoadConnectionString();
+
+            Assert.That(announced, Is.StringContaining("testpw"));
         }
     }
 }

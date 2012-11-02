@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace FluentMigrator.Runner.Initialization
@@ -23,6 +24,7 @@ namespace FluentMigrator.Runner.Initialization
         public int Timeout { get; set; }
         public string ConnectionStringConfigPath { get; set; }
         public IEnumerable<string> Tags { get; set; }
+        public bool DoNotAnnounceConnectionString { get; set; }
 
         public IAnnouncer Announcer
         {
